@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Langflow ⇄ Cloudflare ⇄ Hugging Face (Multi-LoRA) — Seamless “Play + Manage” Stack</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#111826; --muted:#9bb0c7; --text:#e9f0f7;
+      --line:#223047; --accent:#7dd3fc; --accent2:#a7f3d0; --warn:#fca5a5;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family:var(--sans); background:linear-gradient(180deg,#070a0f,#0b0f14 30%, #070a0f);
+      color:var(--text);
+    }
+    a{ color:var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+    header{
+      padding:28px 18px 10px;
+      max-width:1100px; margin:0 auto;
+    }
+    h1{ margin:0 0 10px; font-size:28px; letter-spacing:.2px; }
+    .subtitle{ color:var(--muted); line-height:1.35; max-width:900px; }
+    .grid{
+      display:grid; gap:14px; grid-template-columns: 1fr;
+      max-width:1100px; margin:0 auto; padding:10px 18px 40px;
+    }
+    @media (min-width: 960px){
+      .grid{ grid-template-columns: 340px 1fr; align-items:start; }
+      .sticky{ position:sticky; top:14px; }
+    }
+    .card{
+      background:rgba(17,24,38,.92);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .toc h3{ margin:6px 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
+    .toc a{ display:block; padding:8px 10px; border-radius:12px; }
+    .toc a:hover{ background:rgba(125,211,252,.08); text-decoration:none; }
+    .tag{
+      display:inline-block; padding:4px 10px; border:1px solid var(--line);
+      border-radius:999px; font-size:12px; color:var(--muted); margin:0 6px 6px 0;
+      background:rgba(0,0,0,.15);
+    }
+    section{ scroll-margin-top: 18px; }
+    h2{ font-size:20px; margin:6px 0 10px; }
+    h3{ font-size:16px; margin:14px 0 8px; color:#d7e6f7; }
+    p, li{ color:#d7e6f7; line-height:1.55; }
+    .muted{ color:var(--muted); }
+    .pillrow{ margin:10px 0 0; }
+    details{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(0,0,0,.12);
+      margin:10px 0;
+    }
+    summary{
+      cursor:pointer; list-style:none; font-weight:600;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    .callout{
+      border-left:4px solid var(--accent2);
+      background:rgba(167,243,208,.07);
+      padding:12px 12px;
+      border-radius:12px;
+      margin:10px 0;
+    }
+    .warn{
+      border-left:4px solid var(--warn);
+      background:rgba(252,165,165,.07);
+    }
+    pre{
+      margin:10px 0 8px;
+      background:#0a1220;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      overflow:auto;
+      font-family:var(--mono);
+      font-size:12.5px;
+      line-height:1.45;
+      position:relative;
+    }
+    code{ font-family:var(--mono); }
+    .copybtn{
+      position:absolute; top:10px; right:10px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:6px 10px;
+      border-radius:12px;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .copybtn:hover{ background:rgba(255,255,255,.09); }
+    .row{
+      display:grid; grid-template-columns: 1fr; gap:12px;
+    }
+    @media (min-width: 960px){
+      .row{ grid-template-columns: 1fr 1fr; }
+    }
+    label{ display:block; font-size:12px; color:var(--muted); margin:10px 0 6px; }
+    input, select, textarea{
+      width:100%; border-radius:14px; border:1px solid var(--line);
+      background:#0a1220; color:var(--text);
+      padding:10px 12px; outline:none;
+      font-family:var(--mono); font-size:12.5px;
+    }
+    textarea{ min-height: 90px; resize: vertical; }
+    button.primary{
+      margin-top:12px;
+      border:1px solid rgba(125,211,252,.35);
+      background:rgba(125,211,252,.14);
+      color:var(--text);
+      padding:10px 12px; border-radius:14px;
+      cursor:pointer; font-weight:700;
+    }
+    button.primary:hover{ background:rgba(125,211,252,.2); }
+    footer{
+      max-width:1100px; margin:0 auto; padding:0 18px 30px; color:var(--muted);
+      font-size:12px;
+    }
+    .hr{ height:1px; background:var(--line); margin:14px 0; }
+    .kbd{
+      font-family:var(--mono);
+      border:1px solid var(--line);
+      padding:2px 6px;
+      border-radius:8px;
+      background:rgba(0,0,0,.15);
+      font-size:12px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>Langflow ⇄ Cloudflare ⇄ Hugging Face (Multi-LoRA)</h1>
+  <div class="subtitle">
+    Goal: <b>play</b> with agents in <b>Langflow</b>, <b>manage</b> routing/security/observability in <b>Cloudflare</b>,
+    and run <b>open-weight base models + multiple LoRA adapters</b> on <b>Hugging Face Inference Endpoints (TGI Multi-LoRA)</b>.
+    Everything should feel like one seamless system with “dropdown toggles” for model + adapter + inference knobs.
+  </div>
+  <div class="pillrow">
+    <span class="tag">Cloud-only</span>
+    <span class="tag">Agents in Langflow</span>
+    <span class="tag">LoRA adapters via HF TGI Multi-LoRA</span>
+    <span class="tag">Single Cloudflare “front door” endpoint</span>
+    <span class="tag">Optional AI Gateway observability + caching</span>
+  </div>
+</header>
+
+<div class="grid">
+  <aside class="card toc sticky">
+    <h3>Contents</h3>
+    <a href="#architecture">1) Architecture (seamless “one system”)</a>
+    <a href="#what-exists">2) What exists vs what doesn’t (truth table)</a>
+    <a href="#hf-multilora">3) Hugging Face Multi-LoRA setup</a>
+    <a href="#cf-frontdoor">4) Cloudflare front door (Worker proxy)</a>
+    <a href="#ai-gateway">5) Cloudflare AI Gateway integration (optional)</a>
+    <a href="#langflow-wiring">6) Langflow wiring: dropdown adapters + tweaks</a>
+    <a href="#profiles">7) “Model Profiles” (one dropdown to rule them all)</a>
+    <a href="#security">8) Security + secrets (do this or suffer)</a>
+    <a href="#testing">9) Test plan + debug checklist</a>
+    <a href="#alternatives">10) Alternatives (Workers AI LoRA vs HF Multi-LoRA)</a>
+    <a href="#generator">Bonus: Request generator</a>
+    <a href="#references">References</a>
+  </aside>
+
+  <main class="card">
+    <section id="architecture">
+      <h2>1) Architecture (seamless “play + manage”)</h2>
+      <p>
+        You want two “control surfaces” that feel unified:
+        <b>Langflow</b> for playing with agent graphs and <b>Cloudflare</b> for managing traffic, security, logging, and routing.
+        The trick is to make Langflow call <b>one single endpoint</b> that Cloudflare owns.
+      </p>
+
+      <details open>
+        <summary>High-level diagram</summary>
+        <pre><button class="copybtn" data-copy>Copy</button><code>┌────────────────────────┐
+│        Langflow         │  (Agent graphs, tools, RAG wiring)
+│  - Dropdown: profile    │
+│  - Dropdown: adapter_id │
+│  - Knobs: temp/top_p    │
+└───────────┬────────────┘
+            │ HTTPS (1 endpoint)
+            ▼
+┌────────────────────────┐
+│ Cloudflare Worker       │  (Your “universal shim/router”)
+│ - Inject HF token       │  (hide secrets)
+│ - Map profiles→routes   │  (opus vs LoRA vs cheap)
+│ - Normalize payload     │  (OpenAI-ish in / out)
+└───────────┬────────────┘
+            │ (optional) AI Gateway
+            ▼
+┌────────────────────────┐
+│ Hugging Face Inference  │  (TGI Multi-LoRA)
+│ Endpoint                │  - base model once
+│ /generate               │  - adapter_id per request
+└────────────────────────┘
+
+Output returns to Langflow chat / webhook / your app.</code></pre>
+      </details>
+
+      <div class="callout">
+        <b>Why this feels “seamless”:</b> Langflow never knows about Hugging Face auth, endpoint specifics, or adapter wiring.
+        It only calls your Cloudflare URL. Cloudflare becomes your “backend brain socket”.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="what-exists">
+      <h2>2) What exists vs what doesn’t (truth table)</h2>
+
+      <div class="row">
+        <div>
+          <h3>✅ Exists today</h3>
+          <ul>
+            <li><b>Multi-LoRA serving</b> in TGI: deploy base once, load many adapters (via <span class="kbd">LORA_ADAPTERS</span> or <span class="kbd">--lora-adapters</span>) and choose per request using <span class="kbd">adapter_id</span>.</li>
+            <li><b>Cloudflare AI Gateway</b> can add caching, rate limiting, retries, fallbacks, logging, analytics; supports many providers including Hugging Face.</li>
+            <li><b>Langflow “tweaks”</b> let you override component parameters per run (one-time runtime overrides) so a single flow can serve multiple “profiles”.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>❌ “One UI that does literally everything”</h3>
+          <ul>
+            <li>No single product is simultaneously: best agent UI + best model serving + best adapter lifecycle + best ops console.</li>
+            <li>So you combine: Langflow (agent UX) + Cloudflare (ops/control plane) + HF (model/adapters).</li>
+          </ul>
+          <div class="callout warn">
+            <b>Reality check:</b> “Editing adapters in place” is not a typical feature. The normal workflow is versioning:
+            create a new adapter artifact and swap traffic to it (or load a new adapter set).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="hf-multilora">
+      <h2>3) Hugging Face Multi-LoRA setup (TGI Inference Endpoint)</h2>
+      <p>
+        Hugging Face’s Multi-LoRA pattern: <b>one base model</b> + <b>many LoRA adapters</b> loaded into the same deployment.
+        Each request selects which adapter to apply via <span class="kbd">adapter_id</span>.
+      </p>
+
+      <details open>
+        <summary>What HF Multi-LoRA needs</summary>
+        <ul>
+          <li>A base model repo (example used by HF docs: <span class="kbd">mistralai/Mistral-7B-v0.1</span>).</li>
+          <li>One or more LoRA adapter repos on the Hub (example: <span class="kbd">predibase/customer_support</span>).</li>
+          <li>TGI version ≥ <span class="kbd">2.1.1</span> (per HF Multi-LoRA writeup).</li>
+          <li>Set <span class="kbd">LORA_ADAPTERS=repo1,repo2,...</span> or pass <span class="kbd">--lora-adapters</span> to the container.</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary>HF example (env var + docker)</summary>
+        <pre><button class="copybtn" data-copy>Copy</button><code># Example from HF Multi-LoRA article:
+# - set adapters
+# - run TGI container with --lora-adapters
+
+export model="mistralai/Mistral-7B-v0.1"
+export volume="$PWD/data"
+
+docker run --gpus all --shm-size 1g -p 8080:80 -v $volume:/data \
+  ghcr.io/huggingface/text-generation-inference:2.1.1 \
+  --model-id $model \
+  --lora-adapters=predibase/customer_support,predibase/magicoder</code></pre>
+      </details>
+
+      <details open>
+        <summary>HF request shape: select adapter per request</summary>
+        <pre><button class="copybtn" data-copy>Copy</button><code>curl https://YOUR_TGI_ENDPOINT/generate \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $HF_TOKEN" \
+  -d '{
+    "inputs": "Hello who are you?",
+    "parameters": {
+      "max_new_tokens": 40,
+      "adapter_id": "predibase/customer_support"
+    }
+  }'</code></pre>
+        <p class="muted">
+          This <span class="kbd">adapter_id</span> pattern is the core “plug &amp; play adapters” mechanic.
+        </p>
+      </details>
+
+      <div class="callout">
+        <b>Recommendation (cloud-only):</b> Use HF Inference Endpoints + TGI Multi-LoRA when you want “adapter dropdown”
+        without running your own GPU infrastructure.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="cf-frontdoor">
+      <h2>4) Cloudflare front door (Worker proxy)</h2>
+      <p>
+        This is the seam that makes everything feel like “one platform”.
+        Your Cloudflare Worker:
+      </p>
+      <ul>
+        <li>is the only URL Langflow calls</li>
+        <li>stores secrets (HF token) safely in Worker env vars</li>
+        <li>optionally implements “model profiles” and routing logic</li>
+        <li>normalizes payloads so your Langflow flow stays stable</li>
+      </ul>
+
+      <details open>
+        <summary>Minimal Worker: forward to HF TGI /generate (with adapter_id)</summary>
+        <pre><button class="copybtn" data-copy>Copy</button><code>/**
+ * Cloudflare Worker — HF TGI Multi-LoRA proxy
+ * - Hides HF token
+ * - Allows Langflow to pass adapter_id + decoding params
+ *
+ * Env vars:
+ * - HF_TGI_GENERATE_URL  e.g. https://xxxxxx.us-east-1.aws.endpoints.huggingface.cloud/generate
+ * - HF_TOKEN            Hugging Face access token
+ */
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // Simple health
+    if (url.pathname === "/health") {
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (url.pathname !== "/tgi/generate") {
+      return new Response("Not Found", { status: 404 });
+    }
+
+    if (request.method !== "POST") {
+      return new Response("POST only", { status: 405 });
+    }
+
+    // Expect body in HF TGI format:
+    // {
+    //   "inputs": "...",
+    //   "parameters": { "adapter_id": "...", "max_new_tokens": 256, "temperature": 0.7, ... }
+    // }
+    const body = await request.json();
+
+    const upstream = await fetch(env.HF_TGI_GENERATE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${env.HF_TOKEN}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    // Pass through upstream response
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  },
+};</code></pre>
+      </details>
+
+      <details>
+        <summary>More “seamless”: accept OpenAI-ish input and translate to TGI</summary>
+        <p class="muted">
+          If you want Langflow to talk in “chat messages” format, your Worker can translate it to a single prompt string.
+          (Best practice: build your own chat template for your base model.)
+        </p>
+        <pre><button class="copybtn" data-copy>Copy</button><code>/**
+ * POST /v1/chat/completions (OpenAI-ish) → HF TGI /generate
+ * NOTE: This is a simple example; for real chat, implement a proper chat template.
+ */
+function messagesToPrompt(messages = []) {
+  return messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n") + "\nASSISTANT:";
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/v1/chat/completions" && request.method === "POST") {
+      const body = await request.json();
+
+      const prompt = messagesToPrompt(body.messages || []);
+      const adapter_id = body.adapter_id || body?.metadata?.adapter_id; // allow either field
+      const max_new_tokens = body.max_tokens ?? 256;
+
+      const tgiPayload = {
+        inputs: prompt,
+        parameters: {
+          adapter_id,
+          max_new_tokens,
+          temperature: body.temperature ?? 0.7,
+          top_p: body.top_p ?? 0.95,
+        },
+      };
+
+      const upstream = await fetch(env.HF_TGI_GENERATE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.HF_TOKEN}`,
+        },
+        body: JSON.stringify(tgiPayload),
+      });
+
+      const data = await upstream.json();
+
+      // TGI returns generated_text; wrap it into OpenAI-ish response
+      const generated = data?.generated_text ?? JSON.stringify(data);
+
+      return new Response(JSON.stringify({
+        id: crypto.randomUUID(),
+        object: "chat.completion",
+        choices: [{ index: 0, message: { role: "assistant", content: generated }, finish_reason: "stop" }],
+      }), { headers: { "Content-Type": "application/json" } });
+    }
+
+    return new Response("Not Found", { status: 404 });
+  }
+};</code></pre>
+      </details>
+
+      <div class="callout">
+        <b>Why Worker instead of wiring HF directly from Langflow?</b><br />
+        You keep secrets out of Langflow, enforce auth/rate limits, and get one stable endpoint even if you swap HF endpoints later.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="ai-gateway">
+      <h2>5) Cloudflare AI Gateway integration (optional, but worth it)</h2>
+      <p>
+        AI Gateway adds observability + caching + rate limiting + retries + fallbacks “around” your model calls.
+        It also supports many providers (including Hugging Face). If you want “Cloudflare manages it,” this is your ops console.
+      </p>
+
+      <details open>
+        <summary>What AI Gateway gives you</summary>
+        <ul>
+          <li><b>Logging + analytics</b> (requests, tokens, cost)</li>
+          <li><b>Caching</b> (when safe/appropriate)</li>
+          <li><b>Rate limiting</b> and abuse control</li>
+          <li><b>Retries + model fallback</b></li>
+          <li><b>Many providers</b> supported, plus “Custom Providers” for any HTTPS endpoint</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary>Two ways to integrate HF with AI Gateway</summary>
+        <ol>
+          <li><b>Provider Native: Hugging Face</b> (use Cloudflare’s provider-native integration for HF APIs).</li>
+          <li><b>Custom Provider</b> (point AI Gateway at your HF TGI endpoint base URL so you can log/cap it like any other provider).</li>
+        </ol>
+        <div class="callout">
+          If you’re using HF <b>TGI /generate</b> with <b>adapter_id</b>, a <b>Custom Provider</b> is often the cleanest fit
+          because TGI endpoints can be “custom shape” versus the standardized Inference API.
+        </div>
+      </details>
+
+      <details>
+        <summary>How to wire it (concept)</summary>
+        <p class="muted">
+          Create a custom provider in AI Gateway with <span class="kbd">base_url</span> set to your HF endpoint root.
+          Then route your Worker’s upstream call through the AI Gateway URL for that provider.
+        </p>
+        <pre><button class="copybtn" data-copy>Copy</button><code># Concept only (see Cloudflare docs for exact endpoint path/fields):
+# 1) Create custom provider: base_url = https://YOUR_TGI_ENDPOINT_ROOT
+# 2) In Worker, fetch via the AI Gateway provider URL rather than direct HF URL</code></pre>
+      </details>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="langflow-wiring">
+      <h2>6) Langflow wiring: dropdown adapters + tweaks</h2>
+      <p>
+        In Langflow, create a flow where the “LLM call” node is just an HTTP request to your Cloudflare Worker.
+        Expose inputs like <span class="kbd">adapter_id</span>, <span class="kbd">temperature</span>, <span class="kbd">top_p</span>,
+        and pass them into that HTTP node payload.
+      </p>
+
+      <details open>
+        <summary>Minimal Langflow approach (recommended)</summary>
+        <ol>
+          <li>Add a <b>Chat Input</b> node.</li>
+          <li>Add an <b>HTTP Request</b> node configured to POST to: <span class="kbd">https://YOUR_WORKER_DOMAIN/tgi/generate</span></li>
+          <li>Set the request body to HF TGI JSON (inputs + parameters).</li>
+          <li>Add a <b>Text Output</b> node that displays the returned generated text.</li>
+        </ol>
+      </details>
+
+      <details>
+        <summary>Make it reusable: use “tweaks” for runtime overrides</summary>
+        <p class="muted">
+          Langflow supports “tweaks”: one-time overrides applied at runtime for a single flow run.
+          This is how you turn one flow into many “profiles” without duplicating it.
+        </p>
+        <pre><button class="copybtn" data-copy>Copy</button><code># Example concept: call a Langflow flow run endpoint with tweaks
+# (exact component IDs depend on your flow)
+
+POST https://YOUR_LANGFLOW_HOST/api/v1/run/YOUR_FLOW_ID
+Headers: x-api-key: YOUR_LANGFLOW_API_KEY
+Body:
+{
+  "input_value": "hello",
+  "output_type": "chat",
+  "input_type": "chat",
+  "tweaks": {
+    "MyAdapterDropdownComponent-abc123": { "value": "predibase/customer_support" },
+    "MyTempComponent-def456": { "value": 0.2 }
+  }
+}</code></pre>
+      </details>
+
+      <div class="callout">
+        <b>Important:</b> the adapter dropdown is just an input that ends up in the JSON payload as <span class="kbd">parameters.adapter_id</span>.
+        Langflow itself isn’t “applying” the LoRA — HF TGI is.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="profiles">
+      <h2>7) “Model Profiles” (one dropdown → everything changes)</h2>
+      <p>
+        This is how you get the “one-click” experience: define profiles that map to a bundle of settings
+        (adapter_id, decoding params, tool/rag config).
+      </p>
+
+      <details open>
+        <summary>Profile JSON (store in Worker code or KV)</summary>
+        <pre><button class="copybtn" data-copy>Copy</button><code>{
+  "profiles": {
+    "support": {
+      "adapter_id": "predibase/customer_support",
+      "temperature": 0.2,
+      "top_p": 0.9,
+      "max_new_tokens": 220
+    },
+    "coder": {
+      "adapter_id": "predibase/magicoder",
+      "temperature": 0.1,
+      "top_p": 0.95,
+      "max_new_tokens": 400
+    },
+    "default": {
+      "adapter_id": null,
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "max_new_tokens": 256
+    }
+  }
+}</code></pre>
+      </details>
+
+      <details>
+        <summary>Worker: apply profile defaults + allow overrides</summary>
+        <pre><button class="copybtn" data-copy>Copy</button><code>const PROFILES = {
+  support: { adapter_id: "predibase/customer_support", temperature: 0.2, top_p: 0.9, max_new_tokens: 220 },
+  coder:   { adapter_id: "predibase/magicoder",         temperature: 0.1, top_p: 0.95, max_new_tokens: 400 },
+  default: { adapter_id: null,                          temperature: 0.7, top_p: 0.95, max_new_tokens: 256 },
+};
+
+function pickProfile(name) {
+  return PROFILES[name] || PROFILES.default;
+}</code></pre>
+      </details>
+
+      <div class="callout">
+        <b>Best practice:</b> Put profiles in Cloudflare KV (fast) or D1 (queryable) so you can update profiles without redeploying code.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="security">
+      <h2>8) Security + secrets (do this or suffer)</h2>
+      <ul>
+        <li><b>Never</b> put HF tokens inside Langflow nodes or exported flow files.</li>
+        <li>Put HF token in Cloudflare Worker env var (secret).</li>
+        <li>Protect Langflow with Cloudflare Access (SSO/Zero Trust).</li>
+        <li>Add auth / JWT / Access policy on your Worker endpoint if it’s internet-facing.</li>
+        <li>Rate-limit the Worker endpoint (or AI Gateway) to prevent accidental token burn.</li>
+      </ul>
+      <div class="callout warn">
+        <b>Do not cache</b> responses that include private context unless you know exactly what you’re doing.
+        Caching is amazing for safe/idempotent prompts but risky for user-private prompts.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="testing">
+      <h2>9) Test plan + debug checklist</h2>
+
+      <details open>
+        <summary>Step-by-step smoke test</summary>
+        <ol>
+          <li>Hit Worker health: <span class="kbd">GET /health</span> should return <span class="kbd">{ ok: true }</span>.</li>
+          <li>Call Worker generate with a known adapter_id.</li>
+          <li>Change adapter_id and verify output shifts.</li>
+          <li>Wire into Langflow HTTP node; confirm you can pass adapter_id from a dropdown.</li>
+          <li>Add model profile dropdown; confirm profile changes multiple settings at once.</li>
+        </ol>
+      </details>
+
+      <details>
+        <summary>Common failures</summary>
+        <ul>
+          <li><b>401/403 from HF</b>: token missing/invalid; endpoint not allowing that token.</li>
+          <li><b>Adapter not found</b>: adapter repo not in <span class="kbd">LORA_ADAPTERS</span> list on the endpoint.</li>
+          <li><b>Timeout</b>: endpoint scaling cold start; increase timeout; keep min replicas &gt; 0.</li>
+          <li><b>Weird chat formatting</b>: your “messagesToPrompt” is too naive; implement a real template.</li>
+        </ul>
+      </details>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="alternatives">
+      <h2>10) Alternatives: Cloudflare Workers AI LoRA vs HF Multi-LoRA</h2>
+
+      <div class="row">
+        <div>
+          <h3>Option A — HF Multi-LoRA (this doc)</h3>
+          <ul>
+            <li>Adapter switching per request via <span class="kbd">adapter_id</span>.</li>
+            <li>Great when you want “one base, many adapters”.</li>
+            <li>Clean cloud-only story with Inference Endpoints.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Option B — Cloudflare Workers AI LoRA</h3>
+          <ul>
+            <li>Cloudflare supports LoRA inference on certain base models.</li>
+            <li><b>Limitation:</b> you can’t edit a fine-tune’s uploaded assets in place; you create a new fine-tune to upload a new adapter.</li>
+            <li>Great if you want everything inside Cloudflare, but adapter iteration is “create new artifact”.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="callout">
+        <b>Hybrid play:</b> Use HF Multi-LoRA for rapid adapter iteration + variety, and keep Cloudflare as the consistent gateway + policy layer.
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="generator">
+      <h2>Bonus: request generator (copy/paste ready)</h2>
+      <p class="muted">
+        This generates JSON + curl for your Cloudflare Worker endpoint. Fill in your values, click “Generate”.
+      </p>
+
+      <div class="row">
+        <div>
+          <label>Cloudflare Worker URL (tgi/generate)</label>
+          <input id="workerUrl" value="https://YOUR_WORKER_DOMAIN/tgi/generate" />
+
+          <label>Adapter ID</label>
+          <input id="adapterId" value="predibase/customer_support" />
+
+          <label>Max new tokens</label>
+          <input id="maxNewTokens" type="number" value="120" />
+
+          <label>Temperature</label>
+          <input id="temperature" type="number" step="0.1" value="0.3" />
+
+          <label>Top-p</label>
+          <input id="topP" type="number" step="0.05" value="0.95" />
+
+          <button class="primary" id="genBtn">Generate JSON + curl</button>
+        </div>
+
+        <div>
+          <label>Inputs (prompt)</label>
+          <textarea id="inputs">Write a short customer support reply that is friendly and concise.</textarea>
+
+          <label>Generated JSON</label>
+          <textarea id="jsonOut" readonly></textarea>
+
+          <label>Generated curl</label>
+          <textarea id="curlOut" readonly></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="hr"></div>
+
+    <section id="references">
+      <h2>References</h2>
+      <ul>
+        <li>Hugging Face blog: “TGI Multi-LoRA” (LORA_ADAPTERS + adapter_id usage)</li>
+        <li>Cloudflare AI Gateway docs (features + supported providers + custom providers)</li>
+        <li>Cloudflare Workers AI LoRA docs (limitations + immutable asset note)</li>
+        <li>Langflow docs (API, “tweaks” runtime overrides)</li>
+      </ul>
+      <p class="muted">Tip: keep this page as your internal “stack spec” and update profile names/adapters as you iterate.</p>
+    </section>
+
+  </main>
+</div>
+
+<footer>
+  <div class="card">
+    <b>Next step:</b>
+    make your Worker accept <span class="kbd">profile</span> and automatically choose <span class="kbd">adapter_id</span> + decoding params,
+    so Langflow only passes <span class="kbd">profile</span> + <span class="kbd">inputs</span>.
+  </div>
+</footer>
+
+<script>
+  // Copy buttons for <pre>
+  document.querySelectorAll("button[data-copy]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const pre = btn.closest("pre");
+      const text = pre?.innerText?.replace(/^Copy\\n/, "") ?? "";
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Copied!";
+        setTimeout(() => btn.textContent = "Copy", 900);
+      } catch {
+        btn.textContent = "Copy failed";
+        setTimeout(() => btn.textContent = "Copy", 900);
+      }
+    });
+  });
+
+  // Generator
+  const $ = (id) => document.getElementById(id);
+  const gen = () => {
+    const workerUrl = $("workerUrl").value.trim();
+    const adapterId = $("adapterId").value.trim();
+    const maxNewTokens = Number($("maxNewTokens").value || 256);
+    const temperature = Number($("temperature").value || 0.7);
+    const topP = Number($("topP").value || 0.95);
+    const inputs = $("inputs").value;
+
+    const payload = {
+      inputs,
+      parameters: {
+        adapter_id: adapterId || undefined,
+        max_new_tokens: maxNewTokens,
+        temperature,
+        top_p: topP
+      }
+    };
+
+    if (!payload.parameters.adapter_id) delete payload.parameters.adapter_id;
+
+    $("jsonOut").value = JSON.stringify(payload, null, 2);
+
+    const curl = [
+      `curl "${workerUrl}" \\\\`,
+      `  -X POST \\\\`,
+      `  -H "Content-Type: application/json" \\\\`,
+      `  -d '${JSON.stringify(payload).replace(/'/g, "'\\\\''")}'`
+    ].join("\\n");
+
+    $("curlOut").value = curl;
+  };
+
+  $("genBtn").addEventListener("click", gen);
+  gen();
+</script>
+</body>
+</html>
