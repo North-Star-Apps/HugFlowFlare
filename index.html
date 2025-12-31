@@ -265,6 +265,12 @@
       <ul>
         <li>Each adapter is a <b>Skill</b> with: intent tags, strength, safety profile, eval suite, and fallback chain.</li>
         <li>Router chooses skill; verifier monitors drift; distiller suggests new skills from frequent “expensive paths”.</li>
+        <li><b>Adapter registry</b> with compatibility metadata (base model, quantization, tokenizer) to avoid mismatches.</li>
+        <li><b>Hot-load adapters</b> with eviction policies (LRU/usage-based) for tight GPU memory budgets.</li>
+        <li>
+          <b>Per-request adapter selection</b> with fallbacks when memory budgets are exceeded; cache merged adapters for
+          frequently combined stacks.
+        </li>
       </ul>
 
       <div class="callout">
